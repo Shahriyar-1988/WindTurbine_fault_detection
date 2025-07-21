@@ -1,0 +1,12 @@
+data_ingestion:
+  root_dir : artifacts/data_ingestion
+  data_url: "shahriyar1988/wind-farm-data"
+  data_dir: artifacts/data_ingestion/data
+data_validation:
+  data_dir : artifacts/data_validation
+  STATUS_FILE: artifacts/data_validation/Validation_satus.txt
+data_transformation:
+  data_dir: artifacts\data_validation\Validated_data.csv
+  root_dir : artifacts\data_transformation
+
+  

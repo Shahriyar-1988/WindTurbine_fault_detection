@@ -1,2 +1,6 @@
 documents/
 venv/
+.env
+logs/
+artifacts/
+
