@@ -1,7 +1,8 @@
 from src.constants import *
 from src.entity.config_entity import (DataIngestionConfig,
                                       DataValidationConfig,
-                                      DataTransformationConfig)
+                                      DataTransformationConfig,
+                                      ModelTrainingConfig)
 from src.utils.common import read_yaml,create_directory
 
 class ConfigurationManager:
@@ -37,4 +38,15 @@ class ConfigurationManager:
               data_dir=config.data_dir, root_dir=config.root_dir
          )
          return data_transformation_config
+    def get_model_training_config(self)->ModelTrainingConfig:
+         config=self.config.model_training
+         create_directory([config.root_dir,
+                           config.metrics_dir])
+         model_training_config=ModelTrainingConfig(
+              root_dir=config.root_dir,
+              train_data_path=config.train_data_path,
+              metrics_dir=config.metrics_dir,
+              model_name=config.model_name
+         )
+         return model_training_config
     

@@ -1,1 +1,10 @@
-test: test
+#AutoEncoder learning parameters
+latent_dim: 16
+hidden_dims: [128, 64,32]
+learning_rate: 0.001
+drop_out: 0.2
+batch_size: 32
+epochs : 50
+validation_split: 0.2
+
+

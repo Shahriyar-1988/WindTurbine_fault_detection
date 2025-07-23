@@ -14,6 +14,15 @@ class DataValidationConfig:
 class DataTransformationConfig:
     data_dir: Path
     root_dir: Path
+@dataclass
+class ModelTrainingConfig:
+    root_dir: Path
+    train_data_path: Path
+    metrics_dir: Path
+    model_name: str
+
+  
+
 
     
 
