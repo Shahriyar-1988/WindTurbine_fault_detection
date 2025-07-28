@@ -3,6 +3,7 @@ from src.pipeline.data_ingestion_pipeline import DataIngestionPipeline
 from src.pipeline.data_validation_pipeline import DataValidationPipeline
 from src.pipeline.data_transformation_pipeline import DataTransformationPipeline
 from src.pipeline.model_training_pipeline import TrainingPipeline
+from src.pipeline.classifier_training_pipeline import ClassifierTrainingPipeline
 from pathlib import Path
 
 # logger.info("Welcome to WindTurbine defect finding project")
@@ -36,11 +37,19 @@ from pathlib import Path
 # except Exception as e:
 #     raise e
 
-STAGE_NAME="Model Training Stage" 
+# STAGE_NAME="Model Training Stage" 
+# try:
+#     logger.info(f">>>>{STAGE_NAME} started <<<<")
+#     obj=TrainingPipeline()
+#     obj.initiate_model_training()
+#     logger.info(f">>>> {STAGE_NAME} completed <<<<\n\n")
+# except Exception as e:
+#     raise e
+STAGE_NAME="Classifier Training Stage" 
 try:
     logger.info(f">>>>{STAGE_NAME} started <<<<")
-    obj=TrainingPipeline()
-    obj.initiate_model_training()
+    obj=ClassifierTrainingPipeline()
+    obj.initiate_classifier_training()
     logger.info(f">>>> {STAGE_NAME} completed <<<<\n\n")
 except Exception as e:
     raise e

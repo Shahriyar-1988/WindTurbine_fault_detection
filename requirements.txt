@@ -7,9 +7,11 @@ scipy==1.13.1
 mlflow
 joblib 
 python-box
+pydot
 ensure
 dotenv
 tensorflow
 pathlib
 streamlit
+beartype
 

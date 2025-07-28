@@ -2,7 +2,8 @@ from src.constants import *
 from src.entity.config_entity import (DataIngestionConfig,
                                       DataValidationConfig,
                                       DataTransformationConfig,
-                                      ModelTrainingConfig)
+                                      ModelTrainingConfig,
+                                      ClassifierTrainingConfig)
 from src.utils.common import read_yaml,create_directory
 
 class ConfigurationManager:
@@ -49,4 +50,18 @@ class ConfigurationManager:
               model_name=config.model_name
          )
          return model_training_config
+    def get_classifier_training_config(self)->ClassifierTrainingConfig:
+         config=self.config.classifier_training
+         create_directory([config.root_dir,
+                           config.metrics_dir])
+         classifier_training_config=ClassifierTrainingConfig(
+              root_dir=config.root_dir,
+              data_path=config.data_path,
+              metrics_dir=config.metrics_dir,
+              encoder_path=config.encoder_path,
+              model_name=config.model_name
+
+         )
+         return classifier_training_config
+    
     

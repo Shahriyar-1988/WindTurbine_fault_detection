@@ -20,6 +20,15 @@ class ModelTrainingConfig:
     train_data_path: Path
     metrics_dir: Path
     model_name: str
+@dataclass
+class ClassifierTrainingConfig:
+    root_dir: Path
+    data_path: Path
+    metrics_dir: Path
+    encoder_path: Path
+    model_name: str
+
+
 
   
 
