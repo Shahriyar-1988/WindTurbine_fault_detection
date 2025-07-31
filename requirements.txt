@@ -13,5 +13,7 @@ dotenv
 tensorflow
 pathlib
 streamlit
+imblearn
 beartype
+shap
 

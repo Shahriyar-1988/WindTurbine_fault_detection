@@ -3,7 +3,8 @@ from src.entity.config_entity import (DataIngestionConfig,
                                       DataValidationConfig,
                                       DataTransformationConfig,
                                       ModelTrainingConfig,
-                                      ClassifierTrainingConfig)
+                                      ClassifierTrainingConfig,
+                                      ClassifierEvaluationConfig)
 from src.utils.common import read_yaml,create_directory
 
 class ConfigurationManager:
@@ -63,5 +64,14 @@ class ConfigurationManager:
 
          )
          return classifier_training_config
+    def get_classifier_evaluation_config(self)->ClassifierEvaluationConfig:
+          config=self.config.classifier_evaluation
+          create_directory([config.metrics_file_path])
+          classifier_evaluation_config=ClassifierEvaluationConfig(
+               test_data_paths=config.test_data_paths,
+               cls_model_path=config.cls_model_path,
+               metrics_file_path=config.metrics_file_path
+          )
+          return classifier_evaluation_config
     
     

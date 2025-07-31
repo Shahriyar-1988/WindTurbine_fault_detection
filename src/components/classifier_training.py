@@ -6,11 +6,14 @@ from src.constants import *
 import numpy as np
 import pandas as pd
 import keras
-import tensorflow as tf
 from keras.callbacks import History
-from keras.utils import to_categorical
 from src.utils.common import read_yaml
 from sklearn.model_selection import train_test_split
+from sklearn.impute import KNNImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from imblearn.over_sampling import ADASYN
+from keras.metrics import Precision,AUC
 import matplotlib.pyplot as plt
 from beartype import beartype
 
@@ -36,35 +39,32 @@ class ClassifierTraining:
         cls_save_path=os.path.join(self.config.root_dir,"classifier_summary.txt")
         with open(cls_save_path,"w", encoding='utf-8') as f:
             cls.summary(print_fn=lambda x:f.write(x + "\n"))
-        f1_score=keras.metrics.F1Score(average="macro")
-        
+     
         cls.compile(optimizer=keras.optimizers.Adam(learning_rate=self.params["learning_rate"]),
                         loss="binary_crossentropy",
-                        metrics=[f1_score,"accuracy"]
+                        metrics=["accuracy"]
                     )
 
         logger.info("Classifier model was compiled successfully!")
         model_path=os.path.join(self.config.root_dir,self.config.model_name)
         callbacks_=[
             keras.callbacks.EarlyStopping(monitor="val_loss",
-                                                patience=10,
+                                                patience=5,
                                                 restore_best_weights=True),
            keras.callbacks.ModelCheckpoint(filepath=model_path,save_best_only=True)
         ]
         batch_size = self.params.get("batch_size")
         epochs = self.params.get("epochs")
-        validation_split = self.params.get("validation_split")
+        val_split = self.params.get("validation_split")
 
-        if None in [batch_size, epochs, validation_split]:
+        if None in [batch_size, epochs, val_split]:
             raise ValueError("One or more training parameters are None. Check params.yaml.")
-        y_reshaped=y.reshape(-1,1) # to make y shape suitable for f1-score
     
-
         history = cls.fit(
-            X,y_reshaped,
+            X,y,
             batch_size=batch_size,
             epochs=epochs,
-            validation_split=validation_split,
+            validation_split=val_split,
             callbacks=callbacks_,
             verbose="auto"
         )
@@ -79,20 +79,45 @@ class ClassifierTraining:
 
 
         return history
+    def data_transformer(self,data:pd.DataFrame)->tuple:
+        target_col=self.schema["TARGET_COLUMN"]
+        normal_label=self.schema["NORMAL_LABEL"]
+        X_data=data.drop(target_col,axis=1).to_numpy()
+        y_data=data[target_col].apply(lambda x:1 if x==normal_label else 0).to_numpy()
+        X_train,X_val,y_train,y_val = train_test_split(X_data,y_data,test_size=0.2, stratify=y_data)
+        # Imputation and scaling
+        cls_imputer=KNNImputer(n_neighbors=3)
+        cls_scaler=StandardScaler()
+        data_transformer=Pipeline(
+            [("imputer",cls_imputer),
+             ("scaler",cls_scaler),
+             ]
+        )
+       
+        X_transformed_train=data_transformer.fit_transform(X_train)
+        X_transformed_val=data_transformer.transform(X_val)
+         # imbalanced data management for training
+        adasyn_=ADASYN(random_state=32)
+        X_train_balanced,y_train_balanced=adasyn_.fit_resample(X_transformed_train,y_train)
+        print(y_train_balanced.shape)
+        unique, counts = np.unique(y_train_balanced, return_counts=True)
+        print(dict(zip(unique, counts)))
+
+        
+        X_train_balanced=X_train_balanced.reshape((-1,X_train_balanced.shape[1]//self.params["feature_per_sensor"],self.params["feature_per_sensor"]))
+        logger.info(f"Training feature data was reshaped from {X_train.shape} into {X_train_balanced.shape} successfully!")
+        X_transformed_val=X_transformed_val.reshape((-1,X_transformed_val.shape[1]//self.params["feature_per_sensor"],self.params["feature_per_sensor"]))
+        logger.info(f"Validation feature data was reshaped from {X_val.shape} into {X_transformed_val.shape} successfully!")
+    
+        np.save(os.path.join(self.config.root_dir, "X_val_cls.npy"), X_transformed_val)
+        np.save(os.path.join(self.config.root_dir, "y_val_cls.npy"), y_val)
+        logger.info("Validation data was saved successfuly for evaluation!")
+        return X_train_balanced,y_train_balanced
     
     def trainer(self):
 
         data=pd.read_csv(self.config.data_path)
-        target_col=self.schema["TARGET_COLUMN"]
-        normal_label=self.schema["NORMAL_LABEL"]
-        X=data.drop(target_col,axis=1).to_numpy()
-        X_data=X.reshape((-1,X.shape[1]//self.params["feature_per_sensor"],self.params["feature_per_sensor"]))
-        logger.info(f"Classifier feature data was reshaped from {X.shape} into {X_data.shape} successfully!")
-        y_data=data[target_col].apply(lambda x:1 if x==normal_label else 0).to_numpy()
-        X_train,X_val,y_train,y_val = train_test_split(X_data,y_data,test_size=0.2, stratify=y_data)
-        np.save(os.path.join(self.config.root_dir, "X_val_cls.npy"), X_val)
-        np.save(os.path.join(self.config.root_dir, "y_val_cls.npy"), y_val)
-        logger.info("Validation data was saved successfuly for evaluation!")
+        X_train,y_train=self.data_transformer(data)
         history=self.model_fitter(X_train,y_train)
         self.history_plot(history,self.config.root_dir)
        

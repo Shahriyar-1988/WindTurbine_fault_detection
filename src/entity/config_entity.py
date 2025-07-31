@@ -27,6 +27,12 @@ class ClassifierTrainingConfig:
     metrics_dir: Path
     encoder_path: Path
     model_name: str
+@dataclass
+class ClassifierEvaluationConfig:
+    test_data_paths: list
+    cls_model_path: Path
+    metrics_file_path: Path
+
 
 
 

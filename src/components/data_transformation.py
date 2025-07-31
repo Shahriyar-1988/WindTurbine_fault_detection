@@ -25,6 +25,9 @@ class DataTransformation:
         df=df[df[target_col]!=idling_label] # removing idle as neither faulty nor normal operation
         df=df.drop(drop_col,axis=1)
         logger.info(f"Dropped irrelevant columns: {drop_col}")
+        df = df.loc[:, ~(df == 0).all()]
+        # drop all-zero columns[inactive sensors]
+        logger.info(f"Removed columns with all zero values. Remaining columns: {df.shape[1]}")
         logger.info(f"The size of complete dataset: {df.shape}")
         # only a subset of this huge dataset is more than enough for training
         logger.info("A subset of the dataset is selected")
@@ -33,8 +36,7 @@ class DataTransformation:
             df_subset=df.iloc[idx]
         logger.info(f"The size of the subset dataset: {df_subset.shape}")
         train_data,test_data=train_test_split(df_subset,test_size=0.15,random_state=42)
-        logger.info(f"Training on normal samples only: {train_data.shape}")
-        
+
         # It is time to single out "normal operation only" data for training
         train_df=train_data[train_data[target_col].isin([normal_label])].copy()
         logger.info(f"Training on samples of normal operation only!")
@@ -51,8 +53,8 @@ class DataTransformation:
 
 
         # Saving all artifacts
-        scaler_path=os.path.join(self.config.root_dir,"scaler.pkl")
-        imputer_path=os.path.join(self.config.root_dir,"imputer.pkl")
+        scaler_path=os.path.join(self.config.root_dir,"AE_scaler.pkl")
+        imputer_path=os.path.join(self.config.root_dir,"AE_imputer.pkl")
         save_bin(scaler,file_path=scaler_path), save_bin(imputer,file_path=imputer_path)
         pd.DataFrame(X_train_scaled,columns=X_train.columns).to_csv(self.config.root_dir +"/train.csv",index=False)
         test_data.to_csv(self.config.root_dir+"/test.csv",index=False)

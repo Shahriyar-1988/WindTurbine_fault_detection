@@ -44,7 +44,7 @@ class ModelTraining:
         model_path=os.path.join(self.config.root_dir,self.config.model_name)
         callbacks_=[
             keras.callbacks.EarlyStopping(monitor="val_loss",
-                                                patience=5,
+                                                patience=3,
                                                 restore_best_weights=True),
            keras.callbacks.ModelCheckpoint(filepath=model_path,save_best_only=True)
         ]

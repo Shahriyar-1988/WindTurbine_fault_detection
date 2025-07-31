@@ -19,3 +19,8 @@ classifier_training:
   metrics_dir: artifacts\classifier_training\metrics
   encoder_path: artifacts\model_training\encoder.keras
   model_name: classifier.keras
+
+classifier_evaluation:
+  test_data_paths: [artifacts\classifier_training\X_val_cls.npy,artifacts\classifier_training\y_val_cls.npy]
+  cls_model_path: artifacts\classifier_training\classifier.keras
+  metrics_file_path: artifacts/classifier_evaluation/metircs

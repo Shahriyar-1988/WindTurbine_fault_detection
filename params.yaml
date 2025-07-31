@@ -3,15 +3,16 @@ model_training:
     latent_dim: 16
     hidden_dims: [128, 64,32]
     learning_rate: 0.001
-    feature_per_sensor: 4
+    feature_per_sensor: 3
     drop_out: 0.2
     batch_size: 32
-    epochs : 30
+    epochs : 15
     validation_split: 0.2
+#Classifier learning parameters
 classifier_training:
     hidden_dims: [64,32]
     learning_rate: 0.002
-    feature_per_sensor: 4
+    feature_per_sensor: 3
     drop_out: 0.3
     batch_size: 32
     epochs: 50
