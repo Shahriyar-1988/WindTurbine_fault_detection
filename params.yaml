@@ -13,7 +13,7 @@ classifier_training:
     hidden_dims: [64,32]
     learning_rate: 0.002
     feature_per_sensor: 3
-    drop_out: 0.3
+    drop_out: 0.25
     batch_size: 32
     epochs: 50
     validation_split: 0.15

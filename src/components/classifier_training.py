@@ -13,7 +13,8 @@ from sklearn.impute import KNNImputer
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from imblearn.over_sampling import ADASYN
-from keras.metrics import Precision,AUC
+from keras.metrics import Precision,AUC,Recall
+from keras.losses import BinaryFocalCrossentropy
 import matplotlib.pyplot as plt
 from beartype import beartype
 
@@ -30,7 +31,14 @@ class ClassifierTraining:
                                    drop_out=self.params["drop_out"],
                                    num_classes=self.params["num_classes"]
         )
+        X_train,X_val,y_train,y_val=train_test_split(X,y,test_size=0.15,stratify=y)
+        X_val=X_val.reshape((-1,X_val.shape[1]//self.params["feature_per_sensor"],self.params["feature_per_sensor"]))
+        adasyn_=ADASYN(random_state=32)
+        X_train_balanced,y_train_balanced=adasyn_.fit_resample(X_train,y_train)
 
+        X_train_balanced=X_train_balanced.reshape((-1,X_train_balanced.shape[1]//self.params["feature_per_sensor"],self.params["feature_per_sensor"]))
+        logger.info(f"Training feature data was reshaped from {X_train.shape} into {X_train_balanced.shape} successfully!")
+        
 
         # Save the architecture of each model
         keras.utils.plot_model(cls, to_file=os.path.join(self.config.root_dir, "classifier_architecture.png"), show_shapes=True)
@@ -39,10 +47,16 @@ class ClassifierTraining:
         cls_save_path=os.path.join(self.config.root_dir,"classifier_summary.txt")
         with open(cls_save_path,"w", encoding='utf-8') as f:
             cls.summary(print_fn=lambda x:f.write(x + "\n"))
+            metrics_ = [
+    "accuracy",
+    Precision(name="precision", thresholds=0.5),
+    Recall(name="recall", thresholds=0.5),
+    AUC(name="auc")
+]
      
         cls.compile(optimizer=keras.optimizers.Adam(learning_rate=self.params["learning_rate"]),
-                        loss="binary_crossentropy",
-                        metrics=["accuracy"]
+                        loss=BinaryFocalCrossentropy(),
+                        metrics=metrics_
                     )
 
         logger.info("Classifier model was compiled successfully!")
@@ -61,10 +75,10 @@ class ClassifierTraining:
             raise ValueError("One or more training parameters are None. Check params.yaml.")
     
         history = cls.fit(
-            X,y,
+            X_train_balanced,y_train_balanced,
+            validation_data=(X_val,y_val),
             batch_size=batch_size,
             epochs=epochs,
-            validation_split=val_split,
             callbacks=callbacks_,
             verbose="auto"
         )
@@ -79,12 +93,12 @@ class ClassifierTraining:
 
 
         return history
-    def data_transformer(self,data:pd.DataFrame)->tuple:
+    def classifier_data_transformer(self,data:pd.DataFrame)->tuple:
         target_col=self.schema["TARGET_COLUMN"]
         normal_label=self.schema["NORMAL_LABEL"]
         X_data=data.drop(target_col,axis=1).to_numpy()
         y_data=data[target_col].apply(lambda x:1 if x==normal_label else 0).to_numpy()
-        X_train,X_val,y_train,y_val = train_test_split(X_data,y_data,test_size=0.2, stratify=y_data)
+        X_train,X_test,y_train,y_test = train_test_split(X_data,y_data,test_size=0.2, stratify=y_data)
         # Imputation and scaling
         cls_imputer=KNNImputer(n_neighbors=3)
         cls_scaler=StandardScaler()
@@ -95,29 +109,20 @@ class ClassifierTraining:
         )
        
         X_transformed_train=data_transformer.fit_transform(X_train)
-        X_transformed_val=data_transformer.transform(X_val)
+        X_transformed_test=data_transformer.transform(X_test)
          # imbalanced data management for training
-        adasyn_=ADASYN(random_state=32)
-        X_train_balanced,y_train_balanced=adasyn_.fit_resample(X_transformed_train,y_train)
-        print(y_train_balanced.shape)
-        unique, counts = np.unique(y_train_balanced, return_counts=True)
-        print(dict(zip(unique, counts)))
-
-        
-        X_train_balanced=X_train_balanced.reshape((-1,X_train_balanced.shape[1]//self.params["feature_per_sensor"],self.params["feature_per_sensor"]))
-        logger.info(f"Training feature data was reshaped from {X_train.shape} into {X_train_balanced.shape} successfully!")
-        X_transformed_val=X_transformed_val.reshape((-1,X_transformed_val.shape[1]//self.params["feature_per_sensor"],self.params["feature_per_sensor"]))
-        logger.info(f"Validation feature data was reshaped from {X_val.shape} into {X_transformed_val.shape} successfully!")
+        X_transformed_test=X_transformed_test.reshape((-1,X_transformed_test.shape[1]//self.params["feature_per_sensor"],self.params["feature_per_sensor"]))
+        logger.info(f" Classifier test feature data was reshaped from {X_test.shape} into {X_transformed_test.shape} successfully!")
     
-        np.save(os.path.join(self.config.root_dir, "X_val_cls.npy"), X_transformed_val)
-        np.save(os.path.join(self.config.root_dir, "y_val_cls.npy"), y_val)
+        np.save(os.path.join(self.config.root_dir, "X_test_cls.npy"), X_transformed_test)
+        np.save(os.path.join(self.config.root_dir, "y_test_cls.npy"), y_test)
         logger.info("Validation data was saved successfuly for evaluation!")
-        return X_train_balanced,y_train_balanced
+        return X_transformed_train,y_train
     
     def trainer(self):
 
         data=pd.read_csv(self.config.data_path)
-        X_train,y_train=self.data_transformer(data)
+        X_train,y_train=self.classifier_data_transformer(data)
         history=self.model_fitter(X_train,y_train)
         self.history_plot(history,self.config.root_dir)
        

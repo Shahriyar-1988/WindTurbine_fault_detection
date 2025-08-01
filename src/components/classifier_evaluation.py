@@ -14,7 +14,7 @@ class ClassifierEvaluation:
         self.config=config
     @staticmethod
     def evaluation_metrics(actual,predict):
-        cls_rep = classification_report(actual,predict, output_dict=True)
+        cls_rep = classification_report(actual,predict, output_dict=True,digits=3)
         f1=f1_score(actual,predict,average='macro')
         pr=precision_score(actual,predict,average='macro')
         acc=accuracy_score(actual,predict)
